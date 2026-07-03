@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Quimiotaxis Celular</title>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            /* Paleta Moderna */
+            --primary: #4f46e5;       /* Indigo 600 */
+            --primary-hover: #4338ca; /* Indigo 700 */
+            --secondary: #0ea5e9;     /* Sky 500 */
+            --bg-page: #f8fafc;       /* Slate 50 */
+            --bg-card: #ffffff;
+            --text-main: #0f172a;     /* Slate 900 */
+            --text-muted: #64748b;    /* Slate 500 */
+            --border-color: #e2e8f0;  /* Slate 200 */
+            --success: #10b981;       /* Emerald 500 */
+            --success-bg: #d1fae5;    /* Emerald 100 */
+            --accent: #f43f5e;        /* Rose 500 */
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding: 1rem;
+            min-height: 100vh;
+        }
+
+        /* Contenedor Principal */
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Encabezado */
+        .header {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem 2rem;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .header h1 {
+            color: var(--text-main);
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .header h1 i {
+            color: var(--primary);
+        }
+
+        .instruction {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Layout Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        /* Tarjetas Estilo Panel */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main);
+            border-bottom: 2px solid var(--bg-page);
+            padding-bottom: 0.75rem;
+        }
+
+        /* Controles - Formularios */
+        .control-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .control-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+
+        .val-badge {
+            background: var(--bg-page);
+            color: var(--primary);
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Sliders Personalizados (Range) */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -6px;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.1s;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* Selector Predefinidos */
+        .modern-select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            color: var(--text-main);
+            background-color: var(--bg-page);
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+        
+        .modern-select:focus {
+            outline: 2px solid var(--primary);
+            border-color: transparent;
+        }
+
+        /* Interruptores Toggles (Estilo iOS) */
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .toggle-row:last-of-type {
+            border-bottom: none;
+        }
+
+        .toggle-label {
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--border-color);
+            transition: .3s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: var(--shadow-sm);
+        }
+
+        input:checked + .slider { background-color: var(--success); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* Botones */
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+            color: white;
+        }
+
+        .btn-play {
+            background-color: var(--primary);
+            box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
+        }
+
+        .btn-play:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-reset {
+            background-color: var(--text-muted);
+        }
+
+        .btn-reset:hover {
+            background-color: #475569;
+            transform: translateY(-2px);
+        }
+
+        /* Widgets de Métricas */
+        .metrics-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric-widget {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            border-bottom: 4px solid var(--border-color);
+            transition: transform 0.2s;
+        }
+
+        .metric-widget:hover {
+            transform: translateY(-3px);
+        }
+
+        .metric-widget.highlight {
+            border-bottom-color: var(--success);
+            background-color: var(--success-bg);
+        }
+
+        .m-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-widget.highlight .m-value {
+            color: #047857;
+        }
+
+        .m-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        /* Contenedor del Canvas */
+        .simulation-area {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .canvas-wrapper {
+            background: #000;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            border: 4px solid var(--text-main);
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 4/3;
+        }
+
+        /* Cajas Didácticas */
+        .didactic-boxes {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .alert-box {
+            padding: 1.25rem;
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+        }
+
+        .alert-box h4 {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+
+        .box-reflection {
+            background-color: #eff6ff;
+            color: #1e3a8a;
+            border-left: 5px solid #3b82f6;
+        }
+
+        .box-reflection ol {
+            padding-left: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .box-reflection li {
+            margin-bottom: 0.5rem;
+        }
+
+        .box-theory {
+            background-color: #f1f5f9;
+            color: #334155;
+            border-left: 5px solid #64748b;
+        }
+
+        .box-theory ul {
+            padding-left: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        /* --- RESPONSIVIDAD (Móviles) --- */
+        @media (max-width: 992px) {
+            .main-grid {
+                grid-template-columns: 1fr; /* Columna única */
+            }
+            
+            /* Cambiar el orden visual en móviles: Métricas -> Canvas -> Controles -> Texto */
+            .simulation-area {
+                order: 1;
+            }
+            .panel-controls {
+                order: 2;
+            }
+            .didactic-boxes {
+                order: 3;
+            }
+
+            .header {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .metrics-container {
+                grid-template-columns: 1fr; /* Apilar métricas para no aplastarlas */
+                gap: 0.75rem;
+            }
+
+            .metric-widget {
+                padding: 1rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .m-value {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- Encabezado -->
+        <header class="header">
+            <h1><i class="fas fa-microscope"></i> Simulador de Quimiotaxis</h1>
+            <p class="instruction">
+                Explora la dinámica de la migración celular. Manipula las variables físicas y biológicas en el panel de control para observar cómo las células responden al gradiente químico.
+            </p>
+        </header>
+
+        <!-- Contenedor de la Cuadrícula -->
+        <main class="main-grid">
+            
+            <!-- Columna Izquierda: Controles -->
+            <aside class="panel-controls card">
+                <h2 class="card-title"><i class="fas fa-sliders-h"></i> Panel de Parámetros</h2>
+
+                <select id="preset-select" class="modern-select">
+                    <option value="custom">⚙️ Parámetros Personalizados</option>
+                    <option value="neutrophil">🦠 Neutrófilos (Alta sensibilidad)</option>
+                    <option value="bacteria">🧫 Bacterias (Caminata aleatoria)</option>
+                    <option value="barriers">🧱 Entorno Complejo (Obstáculos)</option>
+                </select>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <span class="control-label">Población Celular</span>
+                        <span class="val-badge" id="val-cells">50</span>
+                    </div>
+                    <input type="range" id="param-cells" min="10" max="200" step="10" value="50">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <span class="control-label">Velocidad de Migración</span>
+                        <span class="val-badge" id="val-speed">2.0</span>
+                    </div>
+                    <input type="range" id="param-speed" min="0.5" max="5.0" step="0.1" value="2.0">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <span class="control-label">Afinidad al Receptor (Sensibilidad)</span>
+                        <span class="val-badge" id="val-sense">0.5</span>
+                    </div>
+                    <input type="range" id="param-sense" min="0" max="1" step="0.05" value="0.5">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <span class="control-label">Difusión Térmica (Ruido)</span>
+                        <span class="val-badge" id="val-noise">0.3</span>
+                    </div>
+                    <input type="range" id="param-noise" min="0" max="1" step="0.05" value="0.3">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <span class="control-label">Inercia Citoesquelética (Persistencia)</span>
+                        <span class="val-badge" id="val-pers">0.7</span>
+                    </div>
+                    <input type="range" id="param-pers" min="0" max="0.95" step="0.05" value="0.7">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <span class="control-label">Alcance del Gradiente</span>
+                        <span class="val-badge" id="val-grad">200</span>
+                    </div>
+                    <input type="range" id="param-grad" min="50" max="500" step="10" value="200">
+                </div>
+
+                <div class="toggles-group" style="margin-top: 1.5rem;">
+                    <div class="toggle-row">
+                        <span class="toggle-label"><i class="fas fa-fire-alt" style="color:var(--accent)"></i> Capa Quimiotáctica</span>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-heatmap" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-row">
+                        <span class="toggle-label"><i class="fas fa-route" style="color:var(--secondary)"></i> Trazar Recorridos</span>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-trails" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="toggle-row">
+                        <span class="toggle-label"><i class="fas fa-cubes" style="color:var(--text-muted)"></i> Matriz Extracelular</span>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-obstacles">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-play" id="btn-play"><i class="fas fa-play"></i> Iniciar</button>
+                    <button class="btn btn-reset" id="btn-reset"><i class="fas fa-redo"></i> Reset</button>
+                </div>
+            </aside>
+
+            <!-- Columna Derecha: Visualización y Métricas -->
+            <section class="simulation-area">
+                
+                <!-- Métricas tipo Dashboard -->
+                <div class="metrics-container">
+                    <div class="metric-widget highlight" id="card-reach">
+                        <div class="m-value" id="metric-reach">0%</div>
+                        <div class="m-label">Células en Destino</div>
+                    </div>
+                    <div class="metric-widget">
+                        <div class="m-value" id="metric-time">0.0s</div>
+                        <div class="m-label">Tiempo de Llegada</div>
+                    </div>
+                    <div class="metric-widget">
+                        <div class="m-value" id="metric-dist">0 px</div>
+                        <div class="m-label">Distancia Promedio</div>
+                    </div>
+                </div>
+
+                <!-- Canvas -->
+                <div class="canvas-wrapper">
+                    <canvas id="sim-canvas" width="800" height="600"></canvas>
+                </div>
+
+                <!-- Bloques Didácticos -->
+                <div class="didactic-boxes">
+                    <div class="alert-box box-reflection">
+                        <h4><i class="fas fa-lightbulb"></i> Disparadores Didácticos</h4>
+                        <ol>
+                            <li>¿Cómo se altera la trayectoria si la <strong>Sensibilidad</strong> es cero y predomina el <strong>Ruido</strong>?</li>
+                            <li>Al activar la <strong>Matriz Extracelular</strong>, ¿una alta <strong>Persistencia</strong> favorece o entorpece rodear los obstáculos?</li>
+                            <li>Observa la velocidad de reclutamiento al modificar el <strong>Alcance del Gradiente</strong>.</li>
+                        </ol>
+                    </div>
+
+                    <div class="alert-box box-theory">
+                        <h4><i class="fas fa-book"></i> Modelo Computacional (Biased Random Walk)</h4>
+                        <p style="font-size: 0.9em; margin-bottom: 0.5rem;">El desplazamiento en el plano se determina calculando un nuevo vector de velocidad resultante de tres fuerzas:</p>
+                        <ul style="font-size: 0.9em;">
+                            <li><strong>Inercia:</strong> La tendencia a mantener la dirección previa.</li>
+                            <li><strong>Gradiente:</strong> Fuerza de atracción hacia la fuente (quimiotaxis direccional).</li>
+                            <li><strong>Difusión:</strong> Movimiento browniano estocástico inherente al medio acuoso.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <!-- LÓGICA JAVASCRIPT (Intacta, vinculada a los nuevos estilos) -->
+    <script>
+        const canvas = document.getElementById('sim-canvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        let isRunning = false;
+        let animationId = null;
+        let cells = [];
+        let obstacles = [];
+        let timeTicks = 0;
+        
+        const target = { x: width - 80, y: height / 2, radius: 30 };
+
+        let config = {
+            numCells: 50,
+            speed: 2.0,
+            sensitivity: 0.5,
+            noise: 0.3,
+            persistence: 0.7,
+            gradientDecay: 200,
+            showHeatmap: true,
+            showTrails: true,
+            hasObstacles: false
+        };
+
+        class Cell {
+            constructor() {
+                this.x = 20 + Math.random() * 40;
+                this.y = (height / 2) + (Math.random() - 0.5) * (height - 100);
+                
+                let angle = (Math.random() - 0.5) * Math.PI;
+                this.vx = Math.cos(angle);
+                this.vy = Math.sin(angle);
+                
+                this.history = []; 
+                this.reachedTarget = false;
+                this.reachTime = 0;
+                // Colores más vibrantes para combinar con el nuevo tema
+                this.color = `hsl(${Math.random() * 30 + 190}, 90%, 65%)`; 
+            }
+
+            update() {
+                if (this.reachedTarget) return;
+
+                let dx = target.x - this.x;
+                let dy = target.y - this.y;
+                let distToTarget = Math.sqrt(dx * dx + dy * dy);
+
+                if (distToTarget < target.radius) {
+                    this.reachedTarget = true;
+                    this.reachTime = timeTicks;
+                    return;
+                }
+
+                let gradientStrength = Math.exp(-distToTarget / config.gradientDecay);
+                let gx = (dx / distToTarget) * gradientStrength;
+                let gy = (dy / distToTarget) * gradientStrength;
+
+                let randAngle = Math.random() * Math.PI * 2;
+                let rx = Math.cos(randAngle);
+                let ry = Math.sin(randAngle);
+
+                let newVx = (config.persistence * this.vx) + (config.sensitivity * gx) + (config.noise * rx);
+                let newVy = (config.persistence * this.vy) + (config.sensitivity * gy) + (config.noise * ry);
+
+                let mag = Math.sqrt(newVx * newVx + newVy * newVy);
+                if (mag > 0) {
+                    this.vx = newVx / mag;
+                    this.vy = newVy / mag;
+                }
+
+                let nextX = this.x + this.vx * config.speed;
+                let nextY = this.y + this.vy * config.speed;
+
+                let collision = false;
+                
+                if (nextX < 0 || nextX > width || nextY < 0 || nextY > height) {
+                    collision = true;
+                }
+
+                if (config.hasObstacles && !collision) {
+                    for (let obs of obstacles) {
+                        if (nextX > obs.x - 3 && nextX < obs.x + obs.w + 3 &&
+                            nextY > obs.y - 3 && nextY < obs.y + obs.h + 3) {
+                            collision = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (collision) {
+                    let deflectAngle = Math.random() * Math.PI * 2;
+                    this.vx = Math.cos(deflectAngle);
+                    this.vy = Math.sin(deflectAngle);
+                } else {
+                    this.x = nextX;
+                    this.y = nextY;
+                }
+
+                if (timeTicks % 3 === 0) {
+                    this.history.push({ x: this.x, y: this.y });
+                    if (this.history.length > 50) this.history.shift();
+                }
+            }
+
+            draw() {
+                if (config.showTrails && this.history.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(this.history[0].x, this.history[0].y);
+                    for (let i = 1; i < this.history.length; i++) {
+                        ctx.lineTo(this.history[i].x, this.history[i].y);
+                    }
+                    ctx.strokeStyle = `rgba(255, 255, 255, 0.4)`;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.reachedTarget ? 5 : 4, 0, Math.PI * 2);
+                ctx.fillStyle = this.reachedTarget ? '#10b981' : this.color;
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 1.5, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+            }
+        }
+
+        function initSimulation() {
+            cells = [];
+            timeTicks = 0;
+            for (let i = 0; i < config.numCells; i++) {
+                cells.push(new Cell());
+            }
+
+            obstacles = [];
+            if (config.hasObstacles) {
+                for (let i = 0; i < 8; i++) {
+                    obstacles.push({
+                        x: 200 + Math.random() * 400,
+                        y: 50 + Math.random() * 500,
+                        w: 25 + Math.random() * 45,
+                        h: 40 + Math.random() * 120
+                    });
+                }
+            }
+            updateMetrics();
+            if (!isRunning) drawFrame(); 
+        }
+
+        function drawEnvironment() {
+            // Fondo oscuro refinado
+            ctx.fillStyle = '#0f172a'; 
+            ctx.fillRect(0, 0, width, height);
+
+            if (config.showHeatmap) {
+                let gradient = ctx.createRadialGradient(target.x, target.y, 0, target.x, target.y, config.gradientDecay * 3);
+                gradient.addColorStop(0, 'rgba(225, 29, 72, 0.6)');   // Rose 600
+                gradient.addColorStop(0.4, 'rgba(245, 158, 11, 0.25)'); // Amber 500
+                gradient.addColorStop(1, 'rgba(15, 23, 42, 0)');       
+                
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, width, height);
+            }
+
+            if (config.hasObstacles) {
+                ctx.fillStyle = '#334155';
+                ctx.strokeStyle = '#64748b';
+                ctx.lineWidth = 2;
+                for (let obs of obstacles) {
+                    ctx.beginPath();
+                    ctx.roundRect(obs.x, obs.y, obs.w, obs.h, 4); // Esquinas redondeadas en obstáculos
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            }
+
+            // Fuente (Quimioatrayente)
+            ctx.beginPath();
+            ctx.arc(target.x, target.y, target.radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(225, 29, 72, 0.15)';
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(target.x, target.y, target.radius * 0.6, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(225, 29, 72, 0.4)';
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(target.x, target.y, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#e11d48';
+            ctx.fill();
+        }
+
+        function updateMetrics() {
+            let reachedCount = 0;
+            let sumDist = 0;
+            let sumReachTime = 0;
+
+            cells.forEach(c => {
+                if (c.reachedTarget) {
+                    reachedCount++;
+                    sumReachTime += c.reachTime;
+                } else {
+                    let dx = target.x - c.x;
+                    let dy = target.y - c.y;
+                    sumDist += Math.sqrt(dx*dx + dy*dy);
+                }
+            });
+
+            let pct = Math.round((reachedCount / config.numCells) * 100);
+            document.getElementById('metric-reach').innerText = `${pct}%`;
+            
+            // Efecto visual si llegan todas
+            const cardReach = document.getElementById('card-reach');
+            if(pct === 100) {
+                cardReach.style.backgroundColor = 'var(--success-bg)';
+                cardReach.style.borderColor = 'var(--success)';
+            } else {
+                cardReach.style.backgroundColor = '';
+                cardReach.style.borderColor = '';
+            }
+
+            if (reachedCount > 0) {
+                let avgTime = (sumReachTime / reachedCount) / 60; 
+                document.getElementById('metric-time').innerText = `${avgTime.toFixed(1)}s`;
+            } else {
+                document.getElementById('metric-time').innerText = `-`;
+            }
+
+            if (config.numCells - reachedCount > 0) {
+                let avgDist = sumDist / (config.numCells - reachedCount);
+                document.getElementById('metric-dist').innerText = `${Math.round(avgDist)} px`;
+            } else {
+                document.getElementById('metric-dist').innerText = `0 px`;
+            }
+        }
+
+        function drawFrame() {
+            drawEnvironment();
+            cells.forEach(c => c.draw());
+        }
+
+        function animate() {
+            if (!isRunning) return;
+            
+            timeTicks++;
+            cells.forEach(c => c.update());
+            drawFrame();
+            
+            if (timeTicks % 30 === 0) {
+                updateMetrics();
+            }
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        const updateConfigFromUI = () => {
+            config.numCells = parseInt(document.getElementById('param-cells').value);
+            config.speed = parseFloat(document.getElementById('param-speed').value);
+            config.sensitivity = parseFloat(document.getElementById('param-sense').value);
+            config.noise = parseFloat(document.getElementById('param-noise').value);
+            config.persistence = parseFloat(document.getElementById('param-pers').value);
+            config.gradientDecay = parseInt(document.getElementById('param-grad').value);
+            
+            config.showHeatmap = document.getElementById('toggle-heatmap').checked;
+            config.showTrails = document.getElementById('toggle-trails').checked;
+            
+            let obstaclesChecked = document.getElementById('toggle-obstacles').checked;
+            if (obstaclesChecked !== config.hasObstacles) {
+                config.hasObstacles = obstaclesChecked;
+                initSimulation(); 
+            } else if (cells.length !== config.numCells) {
+                initSimulation(); 
+            }
+
+            document.getElementById('val-cells').innerText = config.numCells;
+            document.getElementById('val-speed').innerText = config.speed.toFixed(1);
+            document.getElementById('val-sense').innerText = config.sensitivity.toFixed(2);
+            document.getElementById('val-noise').innerText = config.noise.toFixed(2);
+            document.getElementById('val-pers').innerText = config.persistence.toFixed(2);
+            document.getElementById('val-grad').innerText = config.gradientDecay;
+
+            if(!isRunning) drawFrame();
+        };
+
+        const ranges = document.querySelectorAll('input[type="range"]');
+        ranges.forEach(r => r.addEventListener('input', () => {
+            document.getElementById('preset-select').value = 'custom';
+            updateConfigFromUI();
+        }));
+
+        document.getElementById('toggle-heatmap').addEventListener('change', updateConfigFromUI);
+        document.getElementById('toggle-trails').addEventListener('change', updateConfigFromUI);
+        document.getElementById('toggle-obstacles').addEventListener('change', updateConfigFromUI);
+
+        document.getElementById('preset-select').addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (val === 'neutrophil') {
+                document.getElementById('param-speed').value = 3.5;
+                document.getElementById('param-sense').value = 0.8;
+                document.getElementById('param-noise').value = 0.1;
+                document.getElementById('param-pers').value = 0.85;
+                document.getElementById('toggle-obstacles').checked = false;
+            } else if (val === 'bacteria') {
+                document.getElementById('param-speed').value = 2.0;
+                document.getElementById('param-sense').value = 0.3;
+                document.getElementById('param-noise').value = 0.7; 
+                document.getElementById('param-pers').value = 0.2;
+                document.getElementById('toggle-obstacles').checked = false;
+            } else if (val === 'barriers') {
+                document.getElementById('param-speed').value = 2.5;
+                document.getElementById('param-sense').value = 0.6;
+                document.getElementById('param-noise').value = 0.3;
+                document.getElementById('param-pers').value = 0.6;
+                document.getElementById('toggle-obstacles').checked = true;
+            }
+            if(val !== 'custom') updateConfigFromUI();
+        });
+
+        const btnPlay = document.getElementById('btn-play');
+        btnPlay.addEventListener('click', () => {
+            isRunning = !isRunning;
+            if (isRunning) {
+                btnPlay.innerHTML = '<i class="fas fa-pause"></i> Pausar Simulación';
+                btnPlay.style.backgroundColor = '#f59e0b'; // Amber
+                btnPlay.style.boxShadow = '0 4px 14px 0 rgba(245, 158, 11, 0.39)';
+                animate();
+            } else {
+                btnPlay.innerHTML = '<i class="fas fa-play"></i> Iniciar Simulación';
+                btnPlay.style.backgroundColor = 'var(--primary)';
+                btnPlay.style.boxShadow = '0 4px 14px 0 rgba(79, 70, 229, 0.39)';
+                cancelAnimationFrame(animationId);
+            }
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            initSimulation();
+        });
+
+        // Setup inicial
+        updateConfigFromUI();
+        initSimulation();
+
+    </script>
+</body>
+</html>
